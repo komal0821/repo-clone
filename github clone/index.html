@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repositories</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        .banner {
+            background-color: #24292e;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .profile-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-picture {
+            border-radius: 50%;
+            margin-bottom: 10px;
+            max-width: 100px;
+            height: auto;
+        }
+
+        #repositories {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .repo-box {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin: 10px;
+            padding: 15px;
+            width: 300px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+        }
+
+        .repo-box img {
+            max-width: 30px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-size: 1.2em;
+        }
+
+        input,
+        select,
+        button {
+            margin-top: 5px;
+            padding: 8px;
+            font-size: 1em;
+        }
+
+        button {
+            padding: 10px;
+            font-size: 1em;
+            background-color: #2ea44f;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #22863a;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .profile-container {
+                margin-top: 10px;
+            }
+
+            .repo-box {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="banner">
+        <h1>GitHub Repositories</h1>
+
+        <label for="username">GitHub Username:</label>
+        <input type="text" id="username" placeholder="Enter GitHub Username">
+        <button onclick="getRepositories()">Get Repositories</button>
+
+        <label for="perPage">Repositories per page:</label>
+        <select id="perPage">
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+        </select>
+    </div>
+
+    <div class="profile-container">
+        <img src="" alt="Profile Picture" class="profile-picture" id="profilePicture">
+        <div id="profileDetails"></div>
+    </div>
+
+    <div id="repositories"></div>
+
+    <script>
+        async function getRepositories() {
+            const username = document.getElementById('username').value;
+            const perPage = document.getElementById('perPage').value;
+
+            const userUrl = `https://api.github.com/users/${username}`;
+            const reposUrl = `https://api.github.com/users/${username}/repos?per_page=${perPage}&page=1`;
+
+            try {
+                
+                const userResponse = await fetch(userUrl);
+                const userData = await userResponse.json();
+                displayUserProfile(userData);
+
+                
+                const reposResponse = await fetch(reposUrl);
+                const reposData = await reposResponse.json();
+                displayRepositories(reposData);
+            } catch (error) {
+                console.error('Error fetching user or repositories:', error);
+                clearUserProfile();
+                clearRepositories();
+            }
+        }
+
+        function displayUserProfile(user) {
+            const profilePicture = document.getElementById('profilePicture');
+            const profileDetails = document.getElementById('profileDetails');
+
+            profilePicture.src = user.avatar_url;
+
+            const detailsHTML = `
+                <h2>${user.name || user.login}</h2>
+                <p>${user.bio || 'No bio available'}</p>
+                <p>Followers: ${user.followers}</p>
+                <p>Following: ${user.following}</p>
+                <p>Public Repositories: ${user.public_repos}</p>
+            `;
+
+            profileDetails.innerHTML = detailsHTML;
+        }
+
+        function clearUserProfile() {
+            const profilePicture = document.getElementById('profilePicture');
+            profilePicture.src = ''; 
+
+            const profileDetails = document.getElementById('profileDetails');
+            profileDetails.innerHTML = '';
+        }
+
+        function clearRepositories() {
+            const repositoriesContainer = document.getElementById('repositories');
+            repositoriesContainer.innerHTML = 'Error fetching repositories. Please try again.';
+        }
+
+        function displayRepositories(repositories) {
+            const repositoriesContainer = document.getElementById('repositories');
+            repositoriesContainer.innerHTML = '';
+
+            if (repositories.length === 0) {
+                repositoriesContainer.innerHTML = 'No repositories found.';
+                return;
+            }
+
+            repositories.forEach(repo => {
+                const repoDiv = document.createElement('div');
+                repoDiv.className = 'repo-box';
+                repoDiv.innerHTML = `
+                    <h3>${repo.name}</h3>
+                    <p>${repo.description || 'No description available'}</p>
+                    <p>Language: ${repo.language || 'Not specified'}</p>
+                    <p>Stars: ${repo.stargazers_count}</p>
+                    <p>Forks: ${repo.forks_count}</p>
+                    <p>Topics: ${repo.topics.join(', ')}</p>
+                    <img src="${repo.owner.avatar_url}" alt="Owner's Profile Picture">
+                `;
+                repositoriesContainer.appendChild(repoDiv);
+            });
+        }
+    </script>
+</body>
+
+</html>
